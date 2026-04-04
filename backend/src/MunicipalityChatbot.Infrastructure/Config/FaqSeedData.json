@@ -1,0 +1,56 @@
+[
+  {
+    "title": "ساعات العمل",
+    "question": "ما هي ساعات عمل البلدية؟",
+    "shortDescription": "أوقات الدوام الرسمي",
+    "answer": "أوقات الدوام الرسمية في بلدية الخليل هي: من السبت إلى الخميس، من الساعة 8:00 صباحاً حتى 2:00 ظهراً.",
+    "language": "AR",
+    "tags": "ساعات العمل,الدوام,أوقات العمل,دوام الموظفين",
+    "department": "خدمة العملاء"
+  },
+  {
+    "title": "Working Hours",
+    "question": "What are the municipality working hours?",
+    "shortDescription": "Official working hours",
+    "answer": "The official working hours at Hebron Municipality are: Saturday to Thursday, from 8:00 AM to 2:00 PM.",
+    "language": "EN",
+    "tags": "working hours,office hours,schedule",
+    "department": "Customer Service"
+  },
+  {
+    "title": "التسجيل في التطبيق",
+    "question": "كيف يمكنني التسجيل في التطبيق الإلكتروني؟",
+    "shortDescription": "طريقة التسجيل في تطبيق البلدية",
+    "answer": "للتسجيل في التطبيق الإلكتروني، يرجى وضع رقم الهوية ورقم الجوال والانتظار لإرسال كلمة السر إليك.",
+    "language": "AR",
+    "tags": "تسجيل,التطبيق,الهوية,الجوال",
+    "department": "خدمات الجمهور"
+  },
+  {
+    "title": "App Registration",
+    "question": "How can I register in the mobile app?",
+    "shortDescription": "How to register in municipality app",
+    "answer": "To register in the mobile app, please enter your ID number and mobile number, then wait to receive your password.",
+    "language": "EN",
+    "tags": "register,app,mobile,ID",
+    "department": "Public Services"
+  },
+  {
+    "title": "محادثة مع موظف",
+    "question": "كيف يمكنني التحدث مع موظف خدمة العملاء؟",
+    "shortDescription": "التواصل مع موظف خالل أوقات الدوام",
+    "answer": "يمكنك التحدث مع موظف خدمة العملاء خلال أوقات الدوام الرسمي من الساعة 8:00 صباحاً حتى 2:00 ظهراً، من السبت إلى الخميس.",
+    "language": "AR",
+    "tags": "موظف,خدمة العملاء,تواصل,محادثة",
+    "department": "خدمة العملاء"
+  },
+  {
+    "title": "Talk to Employee",
+    "question": "How can I talk to a customer service employee?",
+    "shortDescription": "Contact employee during working hours",
+    "answer": "You can talk to a customer service employee during official working hours from 8:00 AM to 2:00 PM, Saturday to Thursday.",
+    "language": "EN",
+    "tags": "employee,customer service,contact,chat",
+    "department": "Customer Service"
+  }
+]

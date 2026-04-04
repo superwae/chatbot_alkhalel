@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Municipality Chatbot Widget Example</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            color: #0066cc;
+        }
+        .section {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+        code {
+            background: #e8e8e8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        .highlight {
+            color: #4ec9b0;
+        }
+        .string {
+            color: #ce9178;
+        }
+        .comment {
+            color: #6a9955;
+        }
+        .demo-content {
+            padding: 40px;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .demo-content h2 {
+            margin: 0 0 10px 0;
+        }
+        .demo-content p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        .btn {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0052a3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Municipality Chatbot Widget</h1>
+    <p>This page demonstrates how to embed the Municipality Chatbot widget on your website.</p>
+
+    <div class="demo-content">
+        <h2>Demo Page Content</h2>
+        <p>Click the chat button in the bottom-right corner to try the widget!</p>
+    </div>
+
+    <div class="section">
+        <h2>Quick Start</h2>
+        <p>Add the following code to your website, just before the closing <code>&lt;/body&gt;</code> tag:</p>
+        <pre><span class="comment">&lt;!-- Municipality Chatbot Widget --&gt;</span>
+&lt;script&gt;
+  window.<span class="highlight">MunicipalityChatbotConfig</span> = {
+    <span class="highlight">apiUrl</span>: <span class="string">'https://your-chatbot-server.com'</span>,  <span class="comment">// Required: Your API URL</span>
+    <span class="highlight">apiKey</span>: <span class="string">'your-widget-api-key'</span>,          <span class="comment">// Optional: Widget API key</span>
+    <span class="highlight">position</span>: <span class="string">'bottom-right'</span>,                <span class="comment">// Optional: 'bottom-right' | 'bottom-left'</span>
+    <span class="highlight">themeColor</span>: <span class="string">'#0066cc'</span>,                   <span class="comment">// Optional: Primary color</span>
+    <span class="highlight">defaultLang</span>: <span class="string">'ar'</span>,                       <span class="comment">// Optional: 'ar' | 'en'</span>
+    <span class="highlight">title</span>: <span class="string">'Municipality Assistant'</span>,          <span class="comment">// Optional: Chat window title (English)</span>
+    <span class="highlight">titleAr</span>: <span class="string">'مساعد البلدية'</span>,                <span class="comment">// Optional: Chat window title (Arabic)</span>
+  };
+&lt;/script&gt;
+&lt;script src=<span class="string">"https://your-chatbot-server.com/widget/chatbot-widget.js"</span>&gt;&lt;/script&gt;</pre>
+    </div>
+
+    <div class="section">
+        <h2>Configuration Options</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #e0e0e0;">
+                    <th style="padding: 10px; text-align: left;">Option</th>
+                    <th style="padding: 10px; text-align: left;">Type</th>
+                    <th style="padding: 10px; text-align: left;">Default</th>
+                    <th style="padding: 10px; text-align: left;">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 10px;"><code>apiUrl</code></td>
+                    <td style="padding: 10px;">string</td>
+                    <td style="padding: 10px;"><em>required</em></td>
+                    <td style="padding: 10px;">The URL of your chatbot API server</td>
+                </tr>
+                <tr style="background: #fafafa;">
+                    <td style="padding: 10px;"><code>apiKey</code></td>
+                    <td style="padding: 10px;">string</td>
+                    <td style="padding: 10px;"><em>optional</em></td>
+                    <td style="padding: 10px;">Widget API key for authentication</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px;"><code>position</code></td>
+                    <td style="padding: 10px;">string</td>
+                    <td style="padding: 10px;">'bottom-right'</td>
+                    <td style="padding: 10px;">Widget position: 'bottom-right' or 'bottom-left'</td>
+                </tr>
+                <tr style="background: #fafafa;">
+                    <td style="padding: 10px;"><code>themeColor</code></td>
+                    <td style="padding: 10px;">string</td>
+                    <td style="padding: 10px;">'#0066cc'</td>
+                    <td style="padding: 10px;">Primary color for the widget</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px;"><code>defaultLang</code></td>
+                    <td style="padding: 10px;">string</td>
+                    <td style="padding: 10px;">'ar'</td>
+                    <td style="padding: 10px;">Default language: 'ar' (Arabic) or 'en' (English)</td>
+                </tr>
+                <tr style="background: #fafafa;">
+                    <td style="padding: 10px;"><code>title</code></td>
+                    <td style="padding: 10px;">string</td>
+                    <td style="padding: 10px;">'Municipality Assistant'</td>
+                    <td style="padding: 10px;">Chat window title (English)</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px;"><code>titleAr</code></td>
+                    <td style="padding: 10px;">string</td>
+                    <td style="padding: 10px;">'مساعد البلدية'</td>
+                    <td style="padding: 10px;">Chat window title (Arabic)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>JavaScript API</h2>
+        <p>You can control the widget programmatically using the global <code>MunicipalityChatbot</code> object:</p>
+        <pre><span class="comment">// Open the chat window</span>
+MunicipalityChatbot.<span class="highlight">open</span>();
+
+<span class="comment">// Close the chat window</span>
+MunicipalityChatbot.<span class="highlight">close</span>();
+
+<span class="comment">// Toggle the chat window</span>
+MunicipalityChatbot.<span class="highlight">toggle</span>();
+
+<span class="comment">// Set language ('ar' or 'en')</span>
+MunicipalityChatbot.<span class="highlight">setLanguage</span>(<span class="string">'en'</span>);
+
+<span class="comment">// Send a message programmatically</span>
+MunicipalityChatbot.<span class="highlight">sendMessage</span>(<span class="string">'What are your working hours?'</span>);</pre>
+
+        <p><strong>Try it:</strong></p>
+        <button class="btn" onclick="MunicipalityChatbot.open()">Open Chat</button>
+        <button class="btn" onclick="MunicipalityChatbot.close()">Close Chat</button>
+        <button class="btn" onclick="MunicipalityChatbot.setLanguage('en')">English</button>
+        <button class="btn" onclick="MunicipalityChatbot.setLanguage('ar')">Arabic</button>
+    </div>
+
+    <div class="section">
+        <h2>Server Configuration</h2>
+        <p>On the server side, configure the following environment variables:</p>
+        <pre><span class="comment"># Allow widget requests from specific domains</span>
+Cors__WidgetAllowedOrigins=<span class="string">"https://example.com,https://another-site.com"</span>
+
+<span class="comment"># Or allow all domains (not recommended for production)</span>
+Cors__WidgetAllowedOrigins=<span class="string">"*"</span>
+
+<span class="comment"># Optional: Set a widget API key for authentication</span>
+WIDGET__API_KEY=<span class="string">"your-secret-api-key"</span></pre>
+    </div>
+
+    <!-- Widget Integration -->
+    <script>
+        window.MunicipalityChatbotConfig = {
+            // For this example, we use the current origin
+            apiUrl: window.location.origin,
+            // apiKey: 'your-api-key-here',  // Uncomment if you have an API key
+            position: 'bottom-right',
+            themeColor: '#0066cc',
+            defaultLang: 'ar',
+            title: 'Municipality Assistant',
+            titleAr: 'مساعد البلدية'
+        };
+    </script>
+    <script src="chatbot-widget.js"></script>
+</body>
+</html>

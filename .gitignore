@@ -1,0 +1,38 @@
+# Node / React
+node_modules/
+dist/
+build/
+.vite/
+.turbo/
+.parcel-cache/
+.next/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.pdb
+*.log
+*.vspscc
+*.vssscc
+.vs/
+
+# Env
+.env
+.env.local
+.env.*.local
+env/*.env
+env/*.env.*
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Large files / local config
+backend-image.tar
+.claude/
+tools/.pylibs/
+

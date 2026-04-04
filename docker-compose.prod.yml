@@ -1,0 +1,89 @@
+name: municipality-chatbot
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.11.5
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: municipality_chatbot
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  backend:
+    image: superwae/municipality-chatbot-backend:latest
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+      # Database init - MUST be true for first run
+      DATABASE__AUTOMIGRATE: "true"
+      # Admin seed
+      SEED__ADMIN__ENABLED: "true"
+      SEED__ADMIN__USERNAME: ${SEED__ADMIN__USERNAME:-admin}
+      SEED__ADMIN__PASSWORD: ${SEED__ADMIN__PASSWORD}
+      SEED__ADMIN__ROLE: ${SEED__ADMIN__ROLE:-EmployeeAdmin}
+      # LLM provider switch (OpenAI|Gemini)
+      LLM__PROVIDER: ${LLM__PROVIDER:-OpenAI}
+      # OpenAI
+      OPENAI__API_KEY: ${OPENAI__API_KEY}
+      OPENAI__BASE_URL: ${OPENAI__BASE_URL:-https://api.openai.com/v1}
+      OPENAI__MODEL: ${OPENAI__MODEL:-gpt-4o}
+      OPENAI__PLANNER_MODEL: ${OPENAI__PLANNER_MODEL:-gpt-4o}
+      OPENAI__EMBEDDING_MODEL: ${OPENAI__EMBEDDING_MODEL:-text-embedding-3-large}
+      # Gemini
+      GEMINI__API_KEY: ${GEMINI__API_KEY:-}
+      GEMINI__BASE_URL: ${GEMINI__BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
+      GEMINI__MODEL: ${GEMINI__MODEL:-gemini-2.0-flash}
+      GEMINI__PLANNER_MODEL: ${GEMINI__PLANNER_MODEL:-}
+      GEMINI__EMBEDDING_MODEL: ${GEMINI__EMBEDDING_MODEL:-text-embedding-004}
+      # Qdrant
+      QDRANT__URL: http://qdrant:6333
+      QDRANT__API_KEY: ${QDRANT__API_KEY:-}
+      QDRANT__COLLECTION: ${QDRANT__COLLECTION:-municipality_knowledge}
+      QDRANT__VECTOR_SIZE: ${QDRANT__VECTOR_SIZE:-3072}
+      # PostgreSQL
+      POSTGRES__CONNECTION_STRING: Host=postgres;Database=municipality_chatbot;Username=postgres;Password=${POSTGRES_PASSWORD}
+      # Auth
+      AUTH__JWT__ISSUER: ${AUTH__JWT__ISSUER:-municipality-chatbot}
+      AUTH__JWT__AUDIENCE: ${AUTH__JWT__AUDIENCE:-municipality-chatbot}
+      AUTH__JWT__SIGNING_KEY: ${AUTH__JWT__SIGNING_KEY:-PLEASE_CHANGE_TO_A_LONG_RANDOM_SECRET}
+      AUTH__JWT__ACCESS_TOKEN_MINUTES: ${AUTH__JWT__ACCESS_TOKEN_MINUTES:-60}
+      # CORS
+      Cors__AllowedOrigins: ${Cors__AllowedOrigins:-http://localhost:5173}
+      Cors__WidgetAllowedOrigins: ${Cors__WidgetAllowedOrigins:-http://localhost:5173}
+      # Widget API key
+      WIDGET__API_KEY: ${WIDGET__API_KEY:-}
+      # Rate limiting
+      RATELIMIT__PUBLIC_CHAT__PERMIT_LIMIT: ${RATELIMIT__PUBLIC_CHAT__PERMIT_LIMIT:-30}
+      RATELIMIT__PUBLIC_CHAT__WINDOW_SECONDS: ${RATELIMIT__PUBLIC_CHAT__WINDOW_SECONDS:-60}
+      # API execution safety
+      APICALLS__TIMEOUT_SECONDS: ${APICALLS__TIMEOUT_SECONDS:-10}
+      APICALLS__MAX_RETRIES: ${APICALLS__MAX_RETRIES:-1}
+    depends_on:
+      - qdrant
+      - postgres
+
+  frontend:
+    image: superwae/municipality-chatbot-frontend:latest
+    restart: unless-stopped
+    ports:
+      - "8123:80"
+    depends_on:
+      - backend
+
+volumes:
+  qdrant_data:
+  pg_data:

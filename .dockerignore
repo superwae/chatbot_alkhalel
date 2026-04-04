@@ -1,0 +1,37 @@
+# Build artifacts
+**/bin/
+**/obj/
+
+# Frontend dependencies (not needed for backend build)
+frontend/node_modules/
+
+# Data files
+data/
+backend-image.tar
+
+# IDE / editor
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Git
+.git/
+.gitignore
+
+# Claude
+.claude/
+
+# Docker
+docker-compose*.yml
+
+# Docs
+docs/
+README.md
+CLAUDE.md
+
+# Misc
+*.tar
+*.tar.gz
+widget-test.html

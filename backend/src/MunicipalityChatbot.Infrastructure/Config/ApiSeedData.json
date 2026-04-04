@@ -1,0 +1,40 @@
+[
+  {
+    "apiName": "Pharmacies On Duty",
+    "description": "Retrieve the list of pharmacies currently on duty with their location details including name, address, and coordinates. Use this when citizens ask about pharmacies on duty, emergency pharmacies, or where to find an open pharmacy.",
+    "baseUrl": "http://192.168.100.2:8282",
+    "method": "GET",
+    "pathTemplate": "/ai/pharmacies_on_duty",
+    "authType": "None",
+    "responseHandlingNotes": "Returns array of pharmacies with Name (pharmacy name), B_ID (pharmacy ID), ADDRESS (address), X (X coordinate), Y (Y coordinate). Format the response as a readable list of pharmacies with their addresses."
+  },
+  {
+    "apiName": "Water Schedule",
+    "description": "Retrieve daily water distribution schedules showing which areas receive water and when. Use this when citizens ask about water schedule, water distribution, when water is coming, or water plan for their area.",
+    "baseUrl": "http://192.168.100.2:8282",
+    "method": "GET",
+    "pathTemplate": "/api/WaterAPIController/Water_s_plan",
+    "authType": "None",
+    "responseHandlingNotes": "Returns array with PLAN_PK (plan ID), PLAN_TEXT (covered areas), PLAN_SOURCE (water source), PLAN_DATE (distribution date). Format as a schedule showing areas and their water distribution dates."
+  },
+  {
+    "apiName": "Submit Citizen Complaint",
+    "description": "Submit a citizen complaint through the chatbot. Use this when a citizen wants to file a complaint, report a problem, or submit feedback about municipality services. Requires collecting complaint details from the citizen.",
+    "baseUrl": "http://192.168.100.2:8282",
+    "method": "POST",
+    "pathTemplate": "/api/MobileAPIController/PostCMComplaint4",
+    "authType": "None",
+    "bodySchemaJson": "{\"CATEGORY_SUB_ID\":{\"type\":\"integer\",\"description\":\"Complaint Category ID: 1=garbage, 2=sewage, 3=water, 4=lighting, 5=roads, 6=electricity\",\"required\":true},\"CONTACT_DETAILS\":{\"type\":\"string\",\"description\":\"Complaint description text (same as NOTES)\",\"required\":true},\"MOBILE_NO\":{\"type\":\"string\",\"description\":\"Mobile number e.g. 0599123456\",\"required\":true},\"NOTES\":{\"type\":\"string\",\"description\":\"Complaint details/description\",\"required\":true},\"LOCATION\":{\"type\":\"string\",\"description\":\"Complaint location/address\",\"required\":true},\"ID_DOC_NO\":{\"type\":\"string\",\"description\":\"ID document number, default empty string\",\"default\":\"\"},\"CONTACT_GENDER\":{\"type\":\"integer\",\"description\":\"Gender: 1=Male, 2=Female, default 1\",\"default\":1},\"IMAGE\":{\"type\":\"string\",\"description\":\"Base64 image or null, default null\",\"default\":null}}",
+    "responseHandlingNotes": "Returns the complaint ID number if successful. Confirm to the citizen that their complaint was submitted and provide the reference number."
+  },
+  {
+    "apiName": "Citizen Fees",
+    "description": "Retrieve citizen fees and taxes information. Use this when citizens ask about their fees, taxes, unpaid bills, paid fees, scheduled fees, or frozen fees. Requires the citizen to be logged in (authenticated via their app token). The f_type parameter determines the type of fees: 1 = unpaid fees (رسوم غير مسددة), 2 = paid fees (رسوم مسددة), 3 = scheduled fees (رسوم مجدولة), 4 = frozen fees (رسوم مجمدة). Default to f_type=1 (unpaid) when user asks 'كم ذممي' or 'what do I owe'. Use f_type=2 when user asks about payments made. No customer_id needed - the token identifies the user.",
+    "baseUrl": "https://192.168.100.2",
+    "method": "GET",
+    "pathTemplate": "/api/e-payments/fees-by-customer-id",
+    "authType": "UserToken",
+    "queryParamsSchemaJson": "{\"f_type\":{\"type\":\"integer\",\"description\":\"Fee type: 1=unpaid fees (غير مسددة), 2=paid fees (مسددة), 3=scheduled fees (مجدولة), 4=frozen fees (مجمدة)\",\"required\":true,\"enum\":[1,2,3,4],\"default\":1}}",
+    "responseHandlingNotes": "Response has HttpStatus, Message, and ResponseObject array. Each item in ResponseObject has: TAX_NAME (fee name in Arabic e.g. 'رسوم فحص السيارات'), TAX_DATE (date), AMOUNT (fee amount - negative means credit/refund), CURN (currency e.g. 'NIS'). Format as a clear list showing exactly these 4 fields: fee name (TAX_NAME), date (TAX_DATE), amount (AMOUNT), currency (CURN). If AMOUNT is negative, show as credit/refund. Calculate and show the total at the end. If ResponseObject is empty, tell the user they have no fees of that type. IMPORTANT: When the user's question was generic (كم ذممي, بدي اشوف حسابي, my fees) and showing unpaid fees, mention that they can also ask about: paid fees (المسددة), scheduled fees (المجدولة), or frozen fees (المجمدة). If the user asked for a specific type, don't mention other types."
+  }
+]

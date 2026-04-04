@@ -1,0 +1,96 @@
+name: municipality-chatbot
+
+# Environment variables are loaded from .env file in project root
+# To customize, copy env/local.docker.env to .env and modify
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.11.5
+    ports:
+      - "16333:6333"
+      - "16334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: ${BACKEND__URLS:-http://0.0.0.0:8080}
+      # Database init
+      DATABASE__AUTOMIGRATE: ${DATABASE__AUTOMIGRATE:-true}
+      # Default admin seed (only creates admin if password is provided)
+      SEED__ADMIN__ENABLED: ${SEED__ADMIN__ENABLED:-true}
+      SEED__ADMIN__USERNAME: ${SEED__ADMIN__USERNAME:-admin}
+      SEED__ADMIN__PASSWORD: ${SEED__ADMIN__PASSWORD:-}
+      SEED__ADMIN__ROLE: ${SEED__ADMIN__ROLE:-EmployeeAdmin}
+      # LLM provider switch (OpenAI|Gemini)
+      LLM__PROVIDER: ${LLM__PROVIDER:-OpenAI}
+      # OpenAI
+      OPENAI__API_KEY: ${OPENAI__API_KEY:-}
+      OPENAI__BASE_URL: ${OPENAI__BASE_URL:-https://api.openai.com/v1}
+      OPENAI__MODEL: ${OPENAI__MODEL:-chatgpt-4o-mini}
+      OPENAI__EMBEDDING_MODEL: ${OPENAI__EMBEDDING_MODEL:-text-embedding-3-large}
+      # Gemini
+      GEMINI__API_KEY: ${GEMINI__API_KEY:-}
+      GEMINI__BASE_URL: ${GEMINI__BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
+      GEMINI__MODEL: ${GEMINI__MODEL:-gemini-2.0-flash}
+      GEMINI__EMBEDDING_MODEL: ${GEMINI__EMBEDDING_MODEL:-text-embedding-004}
+      # Qdrant
+      QDRANT__URL: ${QDRANT__URL:-http://qdrant:6333}
+      QDRANT__API_KEY: ${QDRANT__API_KEY:-}
+      QDRANT__COLLECTION: ${QDRANT__COLLECTION:-municipality_knowledge}
+      QDRANT__VECTOR_SIZE: ${QDRANT__VECTOR_SIZE:-3072}
+      # PostgreSQL
+      # NOTE: This is the connection string used *inside* the docker network (Host=postgres).
+      POSTGRES__CONNECTION_STRING: Host=postgres;Database=municipality_chatbot;Username=postgres;Password=pal4ever
+      # Auth
+      AUTH__JWT__ISSUER: ${AUTH__JWT__ISSUER:-municipality-chatbot}
+      AUTH__JWT__AUDIENCE: ${AUTH__JWT__AUDIENCE:-municipality-chatbot}
+      AUTH__JWT__SIGNING_KEY: ${AUTH__JWT__SIGNING_KEY:-PLEASE_CHANGE_TO_A_LONG_RANDOM_SECRET}
+      AUTH__JWT__ACCESS_TOKEN_MINUTES: ${AUTH__JWT__ACCESS_TOKEN_MINUTES:-60}
+      # CORS
+      CORS__ALLOWED_ORIGINS: ${CORS__ALLOWED_ORIGINS:-http://localhost:5173}
+      CORS__WIDGET_ALLOWED_ORIGINS: ${CORS__WIDGET_ALLOWED_ORIGINS:-*}
+      # Widget API key (optional)
+      WIDGET__API_KEY: ${WIDGET__API_KEY:-}
+      # Rate limiting
+      RATELIMIT__PUBLIC_CHAT__PERMIT_LIMIT: ${RATELIMIT__PUBLIC_CHAT__PERMIT_LIMIT:-30}
+      RATELIMIT__PUBLIC_CHAT__WINDOW_SECONDS: ${RATELIMIT__PUBLIC_CHAT__WINDOW_SECONDS:-60}
+      # API execution safety
+      APICALLS__TIMEOUT_SECONDS: ${APICALLS__TIMEOUT_SECONDS:-10}
+      APICALLS__MAX_RETRIES: ${APICALLS__MAX_RETRIES:-1}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - qdrant
+      - postgres
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: municipality_chatbot
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES__PASSWORD:-pal4ever}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  qdrant_data:
+  pg_data:
+

@@ -1,0 +1,44 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31912.275
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MunicipalityChatbot.Api", "src\MunicipalityChatbot.Api\MunicipalityChatbot.Api.csproj", "{9B49E4AE-CB78-4AE8-A49D-6CB3AAE72F48}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MunicipalityChatbot.Application", "src\MunicipalityChatbot.Application\MunicipalityChatbot.Application.csproj", "{9C72907F-967F-4E7E-AB0A-FB5601B52978}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MunicipalityChatbot.Domain", "src\MunicipalityChatbot.Domain\MunicipalityChatbot.Domain.csproj", "{7BFF2448-165E-43DA-A210-8AD5A524A09E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MunicipalityChatbot.Infrastructure", "src\MunicipalityChatbot.Infrastructure\MunicipalityChatbot.Infrastructure.csproj", "{F79F98F8-0E4D-4A3B-ACBA-99A90F97F93B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PasswordHashTool", "tools\PasswordHashTool\PasswordHashTool.csproj", "{B0D075C4-A765-4A2E-9E39-064F2A9E8FBB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9B49E4AE-CB78-4AE8-A49D-6CB3AAE72F48}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B49E4AE-CB78-4AE8-A49D-6CB3AAE72F48}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B49E4AE-CB78-4AE8-A49D-6CB3AAE72F48}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B49E4AE-CB78-4AE8-A49D-6CB3AAE72F48}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C72907F-967F-4E7E-AB0A-FB5601B52978}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C72907F-967F-4E7E-AB0A-FB5601B52978}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C72907F-967F-4E7E-AB0A-FB5601B52978}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C72907F-967F-4E7E-AB0A-FB5601B52978}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7BFF2448-165E-43DA-A210-8AD5A524A09E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BFF2448-165E-43DA-A210-8AD5A524A09E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BFF2448-165E-43DA-A210-8AD5A524A09E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BFF2448-165E-43DA-A210-8AD5A524A09E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F79F98F8-0E4D-4A3B-ACBA-99A90F97F93B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F79F98F8-0E4D-4A3B-ACBA-99A90F97F93B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F79F98F8-0E4D-4A3B-ACBA-99A90F97F93B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F79F98F8-0E4D-4A3B-ACBA-99A90F97F93B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0D075C4-A765-4A2E-9E39-064F2A9E8FBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0D075C4-A765-4A2E-9E39-064F2A9E8FBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0D075C4-A765-4A2E-9E39-064F2A9E8FBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0D075C4-A765-4A2E-9E39-064F2A9E8FBB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
+
