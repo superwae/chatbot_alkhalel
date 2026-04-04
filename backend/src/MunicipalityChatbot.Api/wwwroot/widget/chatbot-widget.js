@@ -366,7 +366,10 @@
 
     const msgEl = document.createElement('div');
     msgEl.className = `mcb-message ${role}`;
-    msgEl.textContent = text;
+    // Convert URLs to clickable links, escape HTML first
+    const escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const linked = escaped.replace(/(https?:\/\/[^\s,،)}\]]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#0066cc;text-decoration:underline">$1</a>');
+    msgEl.innerHTML = linked;
 
     const msgLang = lang || detectLanguage(text);
     msgEl.dir = msgLang === 'ar' ? 'rtl' : 'ltr';

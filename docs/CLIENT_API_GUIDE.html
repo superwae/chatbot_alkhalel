@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Municipality Chatbot API - Integration Guide</title>
+<style>
+  body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 850px; margin: 40px auto; padding: 0 20px; color: #333; line-height: 1.6; }
+  h1 { color: #0066cc; border-bottom: 2px solid #0066cc; padding-bottom: 10px; }
+  h2 { color: #004499; margin-top: 30px; }
+  h3 { color: #333; }
+  code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 14px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .keyword { color: #569cd6; }
+  .string { color: #ce9178; }
+  .comment { color: #6a9955; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th, td { border: 1px solid #ddd; padding: 10px 14px; text-align: left; }
+  th { background: #0066cc; color: white; }
+  tr:nth-child(even) { background: #f9f9f9; }
+  .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
+  .warning strong { color: #856404; }
+  .info { background: #d1ecf1; border-left: 4px solid #0dcaf0; padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
+  .step { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 16px; margin: 12px 0; }
+  .step-num { display: inline-block; background: #0066cc; color: white; width: 28px; height: 28px; text-align: center; line-height: 28px; border-radius: 50%; font-weight: bold; margin-right: 8px; }
+  @media print { body { margin: 20px; } pre { background: #f4f4f4 !important; color: #333 !important; border: 1px solid #ddd; } }
+</style>
+</head>
+<body>
+
+<h1>Municipality Chatbot API - Integration Guide</h1>
+
+<h2>Endpoint</h2>
+<pre><code>POST http://egate.hebron-city.ps:8123/api/chat/public</code></pre>
+
+<h2>Headers</h2>
+<pre><code>Content-Type: application/json</code></pre>
+
+<h2>Request Body</h2>
+<pre><code>{
+  "<span class="keyword">Message</span>": "<span class="string">بدي اقدم شكوى</span>",
+  "<span class="keyword">Lang</span>": "<span class="string">ar</span>",
+  "<span class="keyword">SessionId</span>": null
+}</code></pre>
+
+<table>
+  <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td><code>Message</code></td><td>string</td><td><strong>Yes</strong></td><td>The user's message</td></tr>
+  <tr><td><code>Lang</code></td><td>string</td><td>No</td><td><code>"ar"</code> or <code>"en"</code> (auto-detected if omitted)</td></tr>
+  <tr><td><code>SessionId</code></td><td>string (GUID)</td><td>No</td><td><code>null</code> for first message. <strong>Must send back the <code>sessionId</code> from the response in all follow-up messages.</strong></td></tr>
+  <tr><td><code>UserToken</code></td><td>string</td><td>No</td><td>Citizen auth token (for services requiring login, e.g. fees lookup)</td></tr>
+</table>
+
+<div class="warning">
+  <strong>IMPORTANT:</strong> Property names are <strong>PascalCase</strong> — use <code>Message</code>, not <code>message</code>.
+</div>
+
+<h2>Response</h2>
+<pre><code>{
+  "<span class="keyword">sessionId</span>": "<span class="string">db380920-290b-46b6-96aa-2fc1ef66d69c</span>",
+  "<span class="keyword">route</span>": "<span class="string">API</span>",
+  "<span class="keyword">answer</span>": "<span class="string">the answer here</span>",
+  "<span class="keyword">citations</span>": [],
+  "<span class="keyword">followUpQuestion</span>": null
+}</code></pre>
+
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>sessionId</code></td><td>string (GUID)</td><td>Session ID — <strong>send this back in the next request</strong></td></tr>
+  <tr><td><code>route</code></td><td>string</td><td>Which route was used (<code>FAQ</code>, <code>API</code>, <code>RAG</code>, <code>GENERAL</code>)</td></tr>
+  <tr><td><code>answer</code></td><td>string</td><td>The bot's answer (may contain URLs — render them as clickable links in your app)</td></tr>
+  <tr><td><code>citations</code></td><td>array</td><td>Source references (if any)</td></tr>
+  <tr><td><code>followUpQuestion</code></td><td>string or null</td><td>If not null, show this instead of <code>answer</code> — the bot needs more info from the user</td></tr>
+</table>
+
+<h2>Multi-Turn Flow (Critical)</h2>
+
+<div class="warning">
+  <strong>If you don't send <code>SessionId</code> back, every message is treated as a new conversation and multi-turn flows (complaints, follow-ups) will NOT work.</strong>
+</div>
+
+<ol>
+  <li>First request &rarr; send <code>"SessionId": null</code></li>
+  <li>Get response &rarr; save the <code>sessionId</code> from the response</li>
+  <li>All next requests &rarr; send that same <code>SessionId</code> back</li>
+</ol>
+
+<h2>Example: Full Complaint Flow</h2>
+
+<div class="step">
+  <p><span class="step-num">1</span> <strong>User starts complaint</strong></p>
+  <pre><code><span class="comment">// Request</span>
+{ "<span class="keyword">Message</span>": "<span class="string">بدي اقدم شكوى</span>", "<span class="keyword">Lang</span>": "<span class="string">ar</span>", "<span class="keyword">SessionId</span>": null }
+
+<span class="comment">// Response</span>
+{
+  "<span class="keyword">sessionId</span>": "<span class="string">db380920-290b-46b6-96aa-2fc1ef66d69c</span>",
+  "<span class="keyword">answer</span>": "",
+  "<span class="keyword">followUpQuestion</span>": "<span class="string">بالتأكيد! ما هي المشكلة التي تواجهها وأين موقعها؟</span>"
+}</code></pre>
+</div>
+
+<div class="step">
+  <p><span class="step-num">2</span> <strong>User provides details (send sessionId back!)</strong></p>
+  <pre><code><span class="comment">// Request</span>
+{
+  "<span class="keyword">Message</span>": "<span class="string">مياه في شارع السلام</span>",
+  "<span class="keyword">Lang</span>": "<span class="string">ar</span>",
+  "<span class="keyword">SessionId</span>": "<span class="string">db380920-290b-46b6-96aa-2fc1ef66d69c</span>"
+}
+
+<span class="comment">// Response — bot asks for more details or shows confirmation</span></code></pre>
+</div>
+
+<div class="step">
+  <p><span class="step-num">3</span> <strong>Continue until complaint is submitted</strong></p>
+  <p>Always send the same <code>SessionId</code> in every request within the same conversation.</p>
+</div>
+
+<h2>Display Logic</h2>
+
+<div class="info">
+  In your app, check the response and display accordingly:
+</div>
+
+<pre><code><span class="keyword">if</span> (response.followUpQuestion != <span class="keyword">null</span>)
+    show followUpQuestion   <span class="comment">// bot is asking the user for more info</span>
+<span class="keyword">else</span>
+    show answer             <span class="comment">// bot's final answer</span></code></pre>
+
+<p>If <code>answer</code> contains URLs (e.g. <code>https://www.hebron-city.ps</code>), render them as clickable links.</p>
+
+<h2>Error Codes</h2>
+
+<table>
+  <tr><th>Status</th><th>Meaning</th></tr>
+  <tr><td>200</td><td>Success</td></tr>
+  <tr><td>400</td><td>Bad request — check property names (PascalCase) and that <code>Message</code> is not empty</td></tr>
+  <tr><td>429</td><td>Rate limited — wait and retry</td></tr>
+  <tr><td>500</td><td>Server error — retry later</td></tr>
+</table>
+
+</body>
+</html>

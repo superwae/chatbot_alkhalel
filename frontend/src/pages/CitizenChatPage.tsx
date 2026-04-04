@@ -30,22 +30,41 @@ function renderMarkdown(text: string): React.ReactNode {
   };
 
   const formatInlineText = (line: string): React.ReactNode => {
-    // Handle bold **text** or __text__
+    // Handle bold **text** or __text__ and URLs
     const parts: React.ReactNode[] = [];
     let remaining = line;
     let key = 0;
 
     while (remaining) {
+      // Check for bold or URL, whichever comes first
       const boldMatch = remaining.match(/(\*\*|__)(.+?)\1/);
-      if (boldMatch && boldMatch.index !== undefined) {
+      const urlMatch = remaining.match(/(https?:\/\/[^\s,،)}\]]+)/);
+
+      const boldIdx = boldMatch?.index ?? Infinity;
+      const urlIdx = urlMatch?.index ?? Infinity;
+
+      if (boldIdx === Infinity && urlIdx === Infinity) {
+        parts.push(remaining);
+        break;
+      }
+
+      if (boldIdx <= urlIdx && boldMatch && boldMatch.index !== undefined) {
         if (boldMatch.index > 0) {
           parts.push(remaining.slice(0, boldMatch.index));
         }
         parts.push(<strong key={key++}>{boldMatch[2]}</strong>);
         remaining = remaining.slice(boldMatch.index + boldMatch[0].length);
-      } else {
-        parts.push(remaining);
-        break;
+      } else if (urlMatch && urlMatch.index !== undefined) {
+        if (urlMatch.index > 0) {
+          parts.push(remaining.slice(0, urlMatch.index));
+        }
+        const url = urlMatch[1];
+        parts.push(
+          <a key={key++} href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc', textDecoration: 'underline' }}>
+            {url}
+          </a>
+        );
+        remaining = remaining.slice(urlMatch.index + url.length);
       }
     }
     return parts.length === 1 ? parts[0] : parts;
