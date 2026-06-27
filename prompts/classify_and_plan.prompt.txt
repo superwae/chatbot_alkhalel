@@ -87,7 +87,7 @@ PATTERN 3 - User modifying or correcting details:
 - Do NOT treat a correction message as a new complaint description (NOTES)
 - Do NOT treat corrections as rejections/cancellations - the user wants to FIX data, not cancel!
 - Examples:
-  - "بس نوع الشكوى غلط، هي مشكلة طرق مش صرف صحي" → CORRECTION: update CATEGORY_SUB_ID to roads(5), keep location/phone/notes
+  - "بس نوع الشكوى غلط، هي مشكلة طرق مش كهرباء" → CORRECTION: update CATEGORY_SUB_ID to the roads ID from bodySchema, keep location/phone/notes
   - "رقم التلفون غلط، الرقم الصحيح 0599887766" → CORRECTION: update MOBILE_NO, keep everything else
   - "لا قصدي شارع الملك فيصل" → CORRECTION: update LOCATION, keep everything else
   - "لا مش هيك، المشكلة في الإنارة" → CORRECTION: update complaint details/type
@@ -106,10 +106,10 @@ For POST APIs (like complaint submission), NEVER submit directly. Always follow 
 
 REQUIRED FIELDS for complaint: ALL 4 must be collected before showing confirmation card:
   1. نوع المشكلة (Problem type) → maps to CATEGORY_SUB_ID
-     AVAILABLE CATEGORIES ONLY: 1=نفايات/garbage, 2=صرف صحي/sewage, 3=مياه/water, 4=إنارة/lighting, 5=طرق/roads, 6=كهرباء/electricity
-     If user mentions a type NOT in this list (e.g., مرور/traffic, أشجار/trees, ضجيج/noise), tell them:
-     "عذراً، '{type}' ليس من التصنيفات المتاحة. التصنيفات المتاحة هي: نفايات، صرف صحي، مياه، إنارة، طرق، كهرباء. أي تصنيف يناسب مشكلتك؟"
-     Do NOT silently default to a different category. ALWAYS ask the user to choose from the available list.
+     AVAILABLE CATEGORIES (use ONLY these exact IDs, no others):
+{{COMPLAINT_CATEGORIES}}
+     If user mentions a type NOT in this list, tell them the available categories above and ask them to choose.
+     Do NOT silently default to a different category.
   2. الموقع (Location) → maps to LOCATION
   3. رقم الجوال (Phone number) → maps to MOBILE_NO
   4. نص/تفاصيل الشكوى (Complaint description) → maps to NOTES
@@ -202,7 +202,15 @@ ROUTING PRIORITY (check in this order):
    → Even if docChunkCandidates mention similar words (like "رخصة"), do NOT route to RAG
    → Route to "GENERAL" so the assistant can politely decline
 
-2b. SERVICE REQUESTS vs COMPLAINTS (CRITICAL DISTINCTION):
+2b. COMPLAINT CATEGORY INQUIRY (INFORMATIONAL — NOT initiating a complaint):
+   If user asks WHAT complaint categories/types are available (e.g., "ما هي فئات الشكاوي", "ما أنواع الشكاوى", "شو أقدر أشتكي منه", "what can I complain about?", "what complaint categories are there?"):
+   → Do NOT route to RAG (even if documents mention complaint-related words)
+   → Route: "API" (complaint API), leave body params empty, set followUpQuestion listing ALL categories from the AVAILABLE CATEGORIES above.
+   → Arabic followUpQuestion example: "فئات الشكاوى المتاحة هي:\n{list each category as: ID. name}\nأي فئة تخص مشكلتك؟"
+   → English followUpQuestion example: "The available complaint categories are:\n{list each category as: ID. name}\nWhich category does your issue fall under?"
+   → Use the EXACT IDs and names from the AVAILABLE CATEGORIES list above — do not invent or use any other list.
+
+2c. SERVICE REQUESTS vs COMPLAINTS (CRITICAL DISTINCTION):
    The complaint API is ONLY for reporting PROBLEMS/ISSUES (شكاوى). It is NOT for:
    - طلب اشتراك مياه / water subscription request
    - طلب اشتراك كهرباء / electricity subscription request
@@ -263,7 +271,7 @@ ROUTING PRIORITY (check in this order):
 
      B) If ALL 4 fields are collected (from current message + conversationHistory):
         - Extract: NOTES (problem description), LOCATION (address/area), MOBILE_NO (phone)
-        - Determine CATEGORY_SUB_ID: 1=garbage/نفايات, 2=sewage/صرف صحي, 3=water/مياه, 4=lighting/إنارة, 5=roads/طرق, 6=electricity/كهرباء
+        - Determine CATEGORY_SUB_ID from the AVAILABLE CATEGORIES listed above ({{COMPLAINT_CATEGORIES}}). Use ONLY those exact IDs.
         - Set route="API", fill body params with: CATEGORY_SUB_ID, NOTES, LOCATION, MOBILE_NO, CONTACT_DETAILS (same as NOTES), ID_DOC_NO="", CONTACT_GENDER=1, IMAGE=null
         - Set requiresConfirmation=true
         - Set pendingSubmissionSummary - MUST be in userLang:

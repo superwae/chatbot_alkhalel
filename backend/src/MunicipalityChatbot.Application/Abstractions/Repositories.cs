@@ -34,6 +34,7 @@ public interface IApiDefinitionRepository
 public interface IEmployeeRepository
 {
     Task<EmployeeUser?> GetByUsernameAsync(string username, CancellationToken ct);
+    Task<IEnumerable<EmployeeUser>> GetAllTest(CancellationToken ct);
 }
 
 public interface IChatAuditRepository

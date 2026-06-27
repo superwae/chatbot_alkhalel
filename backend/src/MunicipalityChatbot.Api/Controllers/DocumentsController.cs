@@ -17,7 +17,7 @@ public sealed class DocumentsController(
 ) : ControllerBase
 {
     [HttpGet]
-    [Authorize(Roles = $"{EmployeeRoles.EmployeeAdmin},{EmployeeRoles.EmployeeEditor},{EmployeeRoles.EmployeeViewer}")]
+    [Authorize(Roles = $"{EmployeeRoles.EmployeeAdmin},{EmployeeRoles.EmployeeEditor}")]
     public async Task<ActionResult<IReadOnlyList<Document>>> List(CancellationToken ct)
         => Ok(await repo.ListDocsAsync(200, ct));
 

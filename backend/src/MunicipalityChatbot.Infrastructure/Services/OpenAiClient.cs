@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using MunicipalityChatbot.Application.Abstractions;
 using MunicipalityChatbot.Application.Models;
@@ -44,6 +45,9 @@ public sealed class OpenAiClient(
     public async Task<PlannerResult> PlanAsync(PlannerInput input, CancellationToken ct)
     {
         var prompt = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "prompts", "classify_and_plan.prompt.txt"), ct);
+        var categoriesText = BuildComplaintCategoriesText(input.ApiDefinitions);
+        logger.LogInformation("Complaint categories injected into planner prompt: {Categories}", categoriesText);
+        prompt = prompt.Replace("{{COMPLAINT_CATEGORIES}}", categoriesText);
         var system = prompt;
         var user = JsonSerializer.Serialize(new
         {
@@ -58,7 +62,7 @@ public sealed class OpenAiClient(
 
         var plannerModel = !string.IsNullOrWhiteSpace(options.PlannerModel) ? options.PlannerModel : null;
         logger.LogInformation("Planner using model: {Model}", plannerModel ?? options.Model);
-        var raw = await ChatCompletionAsync(system, user, ct, modelOverride: plannerModel);
+        var raw = await ChatCompletionAsync(system, user, null, ct, modelOverride: plannerModel);
         var result = new PlannerResult { RawJson = raw };
 
         try
@@ -75,7 +79,7 @@ public sealed class OpenAiClient(
         }
     }
 
-    public async Task<string> AnswerFromChunksAsync(string userMessage, string userLang, IReadOnlyList<MunicipalityChatbot.Domain.Entities.DocumentChunk> chunks, CancellationToken ct)
+    public async Task<string> AnswerFromChunksAsync(string userMessage, string userLang, IReadOnlyList<MunicipalityChatbot.Domain.Entities.DocumentChunk> chunks, IReadOnlyList<ConversationMessage>? conversationHistory, CancellationToken ct)
     {
         var prompt = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "prompts", "rag_answer.prompt.txt"), ct);
         var system = prompt;
@@ -93,10 +97,10 @@ public sealed class OpenAiClient(
             })
         }, JsonOptions);
 
-        return await ChatCompletionAsync(system, user, ct);
+        return await ChatCompletionAsync(system, user, conversationHistory, ct);
     }
 
-    public async Task<string> AnswerFromApiResultAsync(string userMessage, string userLang, string apiName, string apiResultJson, string notes, CancellationToken ct)
+    public async Task<string> AnswerFromApiResultAsync(string userMessage, string userLang, string apiName, string apiResultJson, string notes, IReadOnlyList<ConversationMessage>? conversationHistory, CancellationToken ct)
     {
         var prompt = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "prompts", "api_answer.prompt.txt"), ct);
         var system = prompt;
@@ -109,25 +113,25 @@ public sealed class OpenAiClient(
             notes
         }, JsonOptions);
 
-        return await ChatCompletionAsync(system, user, ct);
+        return await ChatCompletionAsync(system, user, conversationHistory, ct);
     }
 
-    public async Task<string> AnswerGeneralAsync(string userMessage, string userLang, CancellationToken ct)
+    public async Task<string> AnswerGeneralAsync(string userMessage, string userLang, IReadOnlyList<ConversationMessage>? conversationHistory, CancellationToken ct)
     {
         var system = GetGeneralSystemPrompt(userLang);
-        return await ChatCompletionAsync(system, userMessage, ct);
+        return await ChatCompletionAsync(system, userMessage, conversationHistory, ct);
     }
 
-    public async IAsyncEnumerable<string> StreamAnswerGeneralAsync(string userMessage, string userLang, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+    public async IAsyncEnumerable<string> StreamAnswerGeneralAsync(string userMessage, string userLang, IReadOnlyList<ConversationMessage>? conversationHistory, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
         var system = GetGeneralSystemPrompt(userLang);
-        await foreach (var chunk in StreamChatCompletionAsync(system, userMessage, ct))
+        await foreach (var chunk in StreamChatCompletionAsync(system, userMessage, conversationHistory, ct))
         {
             yield return chunk;
         }
     }
 
-    public async IAsyncEnumerable<string> StreamAnswerFromChunksAsync(string userMessage, string userLang, IReadOnlyList<MunicipalityChatbot.Domain.Entities.DocumentChunk> chunks, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+    public async IAsyncEnumerable<string> StreamAnswerFromChunksAsync(string userMessage, string userLang, IReadOnlyList<MunicipalityChatbot.Domain.Entities.DocumentChunk> chunks, IReadOnlyList<ConversationMessage>? conversationHistory, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
         var prompt = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "prompts", "rag_answer.prompt.txt"), ct);
         var user = JsonSerializer.Serialize(new
@@ -144,7 +148,7 @@ public sealed class OpenAiClient(
             })
         }, JsonOptions);
 
-        await foreach (var chunk in StreamChatCompletionAsync(prompt, user, ct))
+        await foreach (var chunk in StreamChatCompletionAsync(prompt, user, conversationHistory, ct))
         {
             yield return chunk;
         }
@@ -216,17 +220,15 @@ If the user asks about government services NOT provided by us, such as:
 Always be positive and welcoming, and remember you represent the municipality directly.
 """;
 
-    private async Task<string> ChatCompletionAsync(string systemPrompt, string userContent, CancellationToken ct, string? modelOverride = null)
+    private async Task<string> ChatCompletionAsync(string systemPrompt, string userContent, IReadOnlyList<ConversationMessage>? conversationHistory, CancellationToken ct, string? modelOverride = null)
     {
         var model = modelOverride ?? options.Model;
+        var messages = BuildMessagesArray(systemPrompt, userContent, conversationHistory);
+        
         var reqBody = new Dictionary<string, object>
         {
             ["model"] = model,
-            ["messages"] = new object[]
-            {
-                new { role = "system", content = systemPrompt },
-                new { role = "user", content = userContent }
-            }
+            ["messages"] = messages
         };
 
         // GPT-5+ models don't support temperature parameter (only temperature=1 allowed)
@@ -246,17 +248,15 @@ Always be positive and welcoming, and remember you represent the municipality di
         return content?.Trim() ?? "";
     }
 
-    private async IAsyncEnumerable<string> StreamChatCompletionAsync(string systemPrompt, string userContent, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+    private async IAsyncEnumerable<string> StreamChatCompletionAsync(string systemPrompt, string userContent, IReadOnlyList<ConversationMessage>? conversationHistory, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
+        var messages = BuildMessagesArray(systemPrompt, userContent, conversationHistory);
+        
         var reqBody = new Dictionary<string, object>
         {
             ["model"] = options.Model,
             ["stream"] = true,
-            ["messages"] = new object[]
-            {
-                new { role = "system", content = systemPrompt },
-                new { role = "user", content = userContent }
-            }
+            ["messages"] = messages
         };
 
         // GPT-5+ models don't support temperature parameter
@@ -315,6 +315,31 @@ Always be positive and welcoming, and remember you represent the municipality di
         model.StartsWith("o3", StringComparison.OrdinalIgnoreCase) ||
         model.StartsWith("o4", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Builds the messages array for OpenAI API calls, including conversation history.
+    /// </summary>
+    private static object[] BuildMessagesArray(string systemPrompt, string userContent, IReadOnlyList<ConversationMessage>? conversationHistory)
+    {
+        var messages = new List<object>
+        {
+            new { role = "system", content = systemPrompt }
+        };
+
+        // Add conversation history (if available) before the current user message
+        if (conversationHistory is not null)
+        {
+            foreach (var msg in conversationHistory)
+            {
+                messages.Add(new { role = msg.Role, content = msg.Text });
+            }
+        }
+
+        // Add the current user message
+        messages.Add(new { role = "user", content = userContent });
+
+        return messages.ToArray();
+    }
+
     private static PlannerResult FallbackPlanner(string raw) =>
         new()
         {
@@ -323,5 +348,41 @@ Always be positive and welcoming, and remember you represent the municipality di
             FinalAnswerStyle = "short, clear, municipality-friendly",
             RawJson = raw
         };
+
+    /// <summary>
+    /// Parses CATEGORY_SUB_ID.description from the POST API's bodySchema and returns
+    /// a formatted numbered list for direct injection into the planner prompt.
+    /// Falls back to empty string if the schema cannot be parsed (placeholder stays visible).
+    /// </summary>
+    private static string BuildComplaintCategoriesText(IReadOnlyList<object> apiDefinitions)
+    {
+        try
+        {
+            // Serialize to JSON so we can inspect the dynamic objects uniformly
+            var json = JsonSerializer.Serialize(apiDefinitions, JsonOptions);
+            using var doc = JsonDocument.Parse(json);
+            foreach (var api in doc.RootElement.EnumerateArray())
+            {
+                if (!api.TryGetProperty("method", out var methodProp)) continue;
+                if (!methodProp.GetString()!.Equals("POST", StringComparison.OrdinalIgnoreCase)) continue;
+                if (!api.TryGetProperty("bodySchema", out var schemaProp)) continue;
+
+                var schemaJson = schemaProp.GetString() ?? schemaProp.GetRawText();
+                using var schema = JsonDocument.Parse(schemaJson);
+                if (!schema.RootElement.TryGetProperty("CATEGORY_SUB_ID", out var catProp)) continue;
+                if (!catProp.TryGetProperty("description", out var descProp)) continue;
+
+                var desc = descProp.GetString() ?? "";
+                var lines = new List<string>();
+                foreach (Match m in Regex.Matches(desc, @"(\d+)=([^,]+)"))
+                    lines.Add($"     {m.Groups[1].Value} = {m.Groups[2].Value.Trim()}");
+
+                if (lines.Count > 0)
+                    return string.Join("\n", lines);
+            }
+        }
+        catch { }
+        return "     (categories unavailable — ask user to describe the problem type)";
+    }
 }
 

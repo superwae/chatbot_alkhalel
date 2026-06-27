@@ -137,7 +137,7 @@ public sealed class ApiSeedOptions
 
 public sealed class ApiCallsOptions
 {
-    public int TimeoutSeconds { get; set; } = 10;
+    public int TimeoutSeconds { get; set; } = 1800;
     public int MaxRetries { get; set; } = 1;
 }
 

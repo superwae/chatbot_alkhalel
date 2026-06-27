@@ -75,6 +75,8 @@ services:
     depends_on:
       - qdrant
       - postgres
+    volumes:
+      - ./backend/api_responses:/app/api_responses
 
   frontend:
     image: superwae/municipality-chatbot-frontend:latest

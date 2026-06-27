@@ -26,7 +26,7 @@ public sealed class FaqsController(
     );
 
     [HttpGet("{faqId:guid}")]
-    [Authorize(Roles = $"{EmployeeRoles.EmployeeAdmin},{EmployeeRoles.EmployeeEditor},{EmployeeRoles.EmployeeViewer}")]
+    [Authorize(Roles = $"{EmployeeRoles.EmployeeAdmin},{EmployeeRoles.EmployeeEditor}")]
     public async Task<ActionResult<Faq>> Get(Guid faqId, CancellationToken ct)
     {
         var faq = await repo.GetByIdAsync(faqId, ct);

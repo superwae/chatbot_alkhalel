@@ -21,7 +21,7 @@ public sealed class AnalyticsRepository(AppDbContext db) : IAnalyticsRepository
         var topFaqs = await decisions
             .Where(x => x.Route == "FAQ" && x.SelectedFaqId != null)
             .GroupBy(x => x.SelectedFaqId)
-            .Select(g => new { faqId = g.Key, cnt = g.Count() })
+            .Select(g => new { faqId = g.Key, cnt = g.Count(), title = db.Faqs.Where(f => f.FaqId == g.Key).Select(f => f.Title).FirstOrDefault() })
             .OrderByDescending(x => x.cnt)
             .Take(10)
             .ToListAsync(ct);

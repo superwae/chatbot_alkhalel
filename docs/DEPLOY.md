@@ -3,8 +3,8 @@
 ## Overview
 
 This application runs on Docker using pre-built images from Docker Hub:
-- **Backend**: `superwae/municipality-chatbot-backend:latest`
-- **Frontend**: `superwae/municipality-chatbot-frontend:latest`
+- **Backend**: `tnshehadeh/municipality-chatbot-backend:latest`
+- **Frontend**: `tnshehadeh/municipality-chatbot-frontend:latest`
 
 ## Server Requirements
 
@@ -16,7 +16,7 @@ This application runs on Docker using pre-built images from Docker Hub:
 
 ### 1. Create project directory
 
-```bash
+```bash 
 mkdir ~/chatbot && cd ~/chatbot
 ```
 
@@ -62,7 +62,7 @@ services:
       - pg_data:/var/lib/postgresql/data
 
   backend:
-    image: superwae/municipality-chatbot-backend:latest
+    image: tnshehadeh/municipality-chatbot-backend:latest
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -94,7 +94,7 @@ services:
       - postgres
 
   frontend:
-    image: superwae/municipality-chatbot-frontend:latest
+    image: tnshehadeh/municipality-chatbot-frontend:latest
     restart: unless-stopped
     ports:
       - "80:80"
@@ -171,12 +171,12 @@ When code changes are made, run these commands:
 
 ```powershell
 # Build and push backend
-docker build --no-cache -t superwae/municipality-chatbot-backend:latest -f backend/Dockerfile .
-docker push superwae/municipality-chatbot-backend:latest
+docker build --no-cache -t tnshehadeh/municipality-chatbot-backend:latest -f backend/Dockerfile .
+docker push tnshehadeh/municipality-chatbot-backend:latest
 
 # Build and push frontend
-docker build --no-cache -t superwae/municipality-chatbot-frontend:latest -f frontend/Dockerfile .
-docker push superwae/municipality-chatbot-frontend:latest
+docker build --no-cache -t tnshehadeh/municipality-chatbot-frontend:latest -f frontend/Dockerfile .
+docker push tnshehadeh/municipality-chatbot-frontend:latest
 ```
 
 **On the server:**

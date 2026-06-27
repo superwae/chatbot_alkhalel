@@ -87,6 +87,8 @@ export async function* publicChatStream(
   }
 }
 
+export type EmployeeDto = { employeeId: string; username: string; role: string };
+
 export async function employeeLogin(username: string, password: string): Promise<string> {
   const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
     method: "POST",

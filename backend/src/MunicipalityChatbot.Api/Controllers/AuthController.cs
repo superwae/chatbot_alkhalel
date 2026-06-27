@@ -13,6 +13,7 @@ public sealed class AuthController(
 ) : ControllerBase
 {
     public sealed record LoginRequest(string Username, string Password);
+    public sealed record EmployeeDto(Guid EmployeeId, string Username, string Role);
     public sealed record LoginResponse(string AccessToken);
 
     [HttpPost("login")]

@@ -205,9 +205,14 @@ export function CitizenChatPage({ lang }: { lang: Lang }) {
             return updated;
           });
         } else if (evt.type === "error") {
+          // Show a friendly fallback message when API calls fail
+          const fallbackMessage = lang === "ar"
+            ? "عذرًا، لا يمكنني الإجابة على هذا السؤال في الوقت الحالي. يرجى المحاولة مرة أخرى، أو إذا كان هناك أي شيء آخر يمكنني مساعدتك فيه."
+            : "Sorry, I can't answer this question right now. Please try again, or if there's anything else I can help you with.";
+          currentText = fallbackMessage;
           setMessages((m) => {
             const updated = [...m];
-            updated[updated.length - 1] = { role: "assistant", text: `Error: ${evt.error}` };
+            updated[updated.length - 1] = { role: "assistant", text: currentText };
             return updated;
           });
         }
@@ -218,10 +223,13 @@ export function CitizenChatPage({ lang }: { lang: Lang }) {
         setMessages((m) => m.slice(0, -1));
       }
     } catch (e: any) {
+      const fallbackMessage = lang === "ar"
+        ? "عذرًا، لا يمكنني الإجابة على هذا السؤال في الوقت الحالي. يرجى المحاولة مرة أخرى، أو إذا كان هناك أي شيء آخر يمكنني مساعدتك فيه."
+        : "Sorry, I can't answer this question right now. Please try again, or if there's anything else I can help you with.";
       setMessages((m) => {
         const updated = [...m];
         if (updated.length > 0 && updated[updated.length - 1].role === "assistant") {
-          updated[updated.length - 1] = { role: "assistant", text: `Error: ${e?.message ?? e}` };
+          updated[updated.length - 1] = { role: "assistant", text: fallbackMessage };
         }
         return updated;
       });
@@ -292,6 +300,7 @@ export function CitizenChatPage({ lang }: { lang: Lang }) {
             </span>
           </div>
         </div>
+
 
         {messages.length === 0 ? (
           <div className="hero" style={{ paddingTop: 10 }}>

@@ -28,17 +28,17 @@ public sealed class ApiIntegrationsController(IApiDefinitionRepository repo) : C
     );
 
     [HttpGet]
-    [Authorize(Roles = $"{EmployeeRoles.EmployeeAdmin},{EmployeeRoles.EmployeeEditor},{EmployeeRoles.EmployeeViewer}")]
+    [Authorize(Roles = $"{EmployeeRoles.EmployeeAdmin},{EmployeeRoles.EmployeeEditor}")]
     public async Task<ActionResult<IReadOnlyList<ApiDefinition>>> List(CancellationToken ct)
         => Ok(await repo.ListAllAsync(ct));
 
     [HttpGet("allowed")]
-    [Authorize(Roles = $"{EmployeeRoles.EmployeeAdmin},{EmployeeRoles.EmployeeEditor},{EmployeeRoles.EmployeeViewer}")]
+    [Authorize(Roles = $"{EmployeeRoles.EmployeeAdmin},{EmployeeRoles.EmployeeEditor}")]
     public async Task<ActionResult<IReadOnlyList<ApiDefinition>>> Allowed(CancellationToken ct)
         => Ok(await repo.ListAllowedInChatAsync(ct));
 
     [HttpGet("{apiId:guid}")]
-    [Authorize(Roles = $"{EmployeeRoles.EmployeeAdmin},{EmployeeRoles.EmployeeEditor},{EmployeeRoles.EmployeeViewer}")]
+    [Authorize(Roles = $"{EmployeeRoles.EmployeeAdmin},{EmployeeRoles.EmployeeEditor}")]
     public async Task<ActionResult<ApiDefinition>> Get(Guid apiId, CancellationToken ct)
     {
         var api = await repo.GetByIdAsync(apiId, ct);

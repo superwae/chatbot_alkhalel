@@ -1,7 +1,7 @@
 # Municipality Chatbot - Project Context
 
 > **IMPORTANT**: This file MUST be updated whenever changes are made to the project.
-> Last updated: 2026-02-22
+> Last updated: 2026-04-09
 
 ## Project Overview
 
@@ -251,6 +251,9 @@ See `data/TEST_QUESTIONS.md` for comprehensive test scenarios including:
 - Expected answers for verification
 
 ## Recent Changes (Session Log)
+
+### 2026-04-09
+- [x] Added API response logging — all successful API integration calls now save their responses to JSON files in `backend/api_responses/` directory. Files include timestamp, API name, URL, status code, and full response body for debugging and monitoring purposes
 
 ### 2026-02-28
 - [x] Added Vision OCR for scanned PDFs — uses GPT-5.2 Vision API to extract text from PDF page images. Handles scanned, mixed, and text PDFs. Uses `PDFtoImage` NuGet for page rendering, `VisionOcrService` for GPT-5.2 API calls

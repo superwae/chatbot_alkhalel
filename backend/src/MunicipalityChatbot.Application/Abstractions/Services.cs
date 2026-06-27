@@ -28,19 +28,19 @@ public interface IPlanningService
 
 public interface IRagAnswerService
 {
-    Task<string> AnswerFromChunksAsync(string userMessage, string userLang, IReadOnlyList<DocumentChunk> chunks, CancellationToken ct);
-    IAsyncEnumerable<string> StreamAnswerFromChunksAsync(string userMessage, string userLang, IReadOnlyList<DocumentChunk> chunks, CancellationToken ct);
+    Task<string> AnswerFromChunksAsync(string userMessage, string userLang, IReadOnlyList<DocumentChunk> chunks, IReadOnlyList<ConversationMessage>? conversationHistory, CancellationToken ct);
+    IAsyncEnumerable<string> StreamAnswerFromChunksAsync(string userMessage, string userLang, IReadOnlyList<DocumentChunk> chunks, IReadOnlyList<ConversationMessage>? conversationHistory, CancellationToken ct);
 }
 
 public interface IApiAnswerService
 {
-    Task<string> AnswerFromApiResultAsync(string userMessage, string userLang, string apiName, string apiResultJson, string notes, CancellationToken ct);
+    Task<string> AnswerFromApiResultAsync(string userMessage, string userLang, string apiName, string apiResultJson, string notes, IReadOnlyList<ConversationMessage>? conversationHistory, CancellationToken ct);
 }
 
 public interface IGeneralAnswerService
 {
-    Task<string> AnswerGeneralAsync(string userMessage, string userLang, CancellationToken ct);
-    IAsyncEnumerable<string> StreamAnswerGeneralAsync(string userMessage, string userLang, CancellationToken ct);
+    Task<string> AnswerGeneralAsync(string userMessage, string userLang, IReadOnlyList<ConversationMessage>? conversationHistory, CancellationToken ct);
+    IAsyncEnumerable<string> StreamAnswerGeneralAsync(string userMessage, string userLang, IReadOnlyList<ConversationMessage>? conversationHistory, CancellationToken ct);
 }
 
 public interface IApiExecutionService

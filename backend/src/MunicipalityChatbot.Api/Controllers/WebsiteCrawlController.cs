@@ -42,7 +42,7 @@ public sealed class WebsiteCrawlController(
     public sealed record FinalizeResponse(int RemovedPages);
 
     [HttpGet("status")]
-    [Authorize(Roles = $"{EmployeeRoles.EmployeeAdmin},{EmployeeRoles.EmployeeEditor},{EmployeeRoles.EmployeeViewer}")]
+    [Authorize(Roles = $"{EmployeeRoles.EmployeeAdmin},{EmployeeRoles.EmployeeEditor}")]
     public async Task<ActionResult<CrawlStatusResponse>> GetStatus(CancellationToken ct)
     {
         var pages = await db.CrawledPages

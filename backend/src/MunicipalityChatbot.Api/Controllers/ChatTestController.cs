@@ -546,7 +546,7 @@ public sealed class ChatTestController(
                 }
 
                 if (chunks.Count > 0)
-                    result.FinalAnswer = await rag.AnswerFromChunksAsync(q.Message, userLang, chunks, ct);
+                    result.FinalAnswer = await rag.AnswerFromChunksAsync(q.Message, userLang, chunks, null, ct);
                 else
                     result.FinalAnswer = "[No chunks found in DB for selected IDs]";
             }
@@ -583,7 +583,7 @@ public sealed class ChatTestController(
                                 {
                                     result.ApiRawResponse = Truncate(exec.ResponseBody, 2000);
                                     result.FinalAnswer = await apiAnswer.AnswerFromApiResultAsync(
-                                        q.Message, userLang, api.ApiName, exec.ResponseBody, api.ResponseHandlingNotes, ct);
+                                        q.Message, userLang, api.ApiName, exec.ResponseBody, api.ResponseHandlingNotes, null, ct);
                                 }
                                 else
                                 {
@@ -598,7 +598,7 @@ public sealed class ChatTestController(
             }
             else
             {
-                result.FinalAnswer = await general.AnswerGeneralAsync(q.Message, userLang, ct);
+                result.FinalAnswer = await general.AnswerGeneralAsync(q.Message, userLang, null, ct);
             }
             answerSw.Stop();
             result.AnswerTimeMs = answerSw.ElapsedMilliseconds;

@@ -82,6 +82,17 @@ export function AnalyticsPage({ lang, token }: { lang: Lang; token: string }) {
     }
   }
 
+  const totalPages = chatLogs ? Math.ceil(chatLogs.totalCount / limit) : 0;
+
+  // Reset to page 0 when switching to chat-logs (avoids showing an invalid page)
+  const prevTabRef = React.useRef(tab);
+  React.useEffect(() => {
+    if (tab === "chat-logs" && prevTabRef.current !== "chat-logs") {
+      setPage(0);
+    }
+    prevTabRef.current = tab;
+  }, [tab]);
+
   React.useEffect(() => {
     if (tab === "overview" || tab === "faqs" || tab === "routes") {
       loadSummary();
@@ -90,7 +101,12 @@ export function AnalyticsPage({ lang, token }: { lang: Lang; token: string }) {
     }
   }, [tab, page, fromDate, toDate, routeFilter]);
 
-  const totalPages = chatLogs ? Math.ceil(chatLogs.totalCount / limit) : 0;
+  // If page is beyond available data (e.g. after filter change), snap back to last valid page
+  React.useEffect(() => {
+    if (chatLogs && totalPages > 0 && page >= totalPages) {
+      setPage(totalPages - 1);
+    }
+  }, [chatLogs, totalPages, page]);
 
   function toggleExpand(id: string) {
     setExpandedIds((prev) => {
@@ -317,6 +333,7 @@ function RoutesTab({ summary, lang }: { summary: any; lang: Lang }) {
 }
 
 function FaqsTab({ summary, lang }: { summary: any; lang: Lang }) {
+  console.log("FAQ:", summary.topFaqs);
   return (
     <div className="card">
       <h4 style={{ marginTop: 0 }}>{t("mostAskedFaqs", lang)}</h4>
@@ -324,6 +341,7 @@ function FaqsTab({ summary, lang }: { summary: any; lang: Lang }) {
         {summary.topFaqs?.length === 0 && <div className="muted2">{t("noDataYet", lang)}</div>}
         {summary.topFaqs?.map((faq: any, idx: number) => (
           <div key={faq.faqId} className="card compact">
+            <span>{faq.title}</span>
             <div className="row" style={{ gap: 10, alignItems: "center" }}>
               <div
                 style={{

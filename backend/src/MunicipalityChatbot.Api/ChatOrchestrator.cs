@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Primitives;
 using MunicipalityChatbot.Application.Abstractions;
 using MunicipalityChatbot.Application.Models;
@@ -295,7 +296,7 @@ public sealed class ChatOrchestrator(
                     plan.RequiresConfirmation = false;
                     plan.UserConfirmed = false;
                     plan.PendingSubmissionSummary = null;
-                    plan.FollowUpQuestion = GenerateComplaintFollowUp(req.Message, userLang);
+                    plan.FollowUpQuestion = GenerateComplaintFollowUp(req.Message, userLang, GetComplaintCategories(apiDefsForPlanner));
                     logger.LogInformation("Complaint keyword safety net: {Prev} → complaint API for: {Message}", prevRoute, req.Message);
                 }
             }
@@ -408,7 +409,7 @@ public sealed class ChatOrchestrator(
             if (chunks.Count == 0) route = "GENERAL";
             else
             {
-                var answer = await rag.AnswerFromChunksAsync(req.Message, userLang, chunks, ct);
+                var answer = await rag.AnswerFromChunksAsync(req.Message, userLang, chunks, conversationHistory, ct);
                 // Dedupe citations by filename (show each source file only once)
                 var citations = chunks
                     .GroupBy(c => c.Filename)
@@ -488,7 +489,7 @@ public sealed class ChatOrchestrator(
                                 }
 
                                 // Always regenerate summary from body params to ensure it reflects corrections
-                                var summary = GenerateComplaintSummary(bodyParams, userLang);
+                                var summary = GenerateComplaintSummary(bodyParams, userLang, GetComplaintCategories(apiDefsForPlanner));
 
                                 var confirmPrompt = userLang == "ar"
                                     ? $"{summary}\n\nهل تريد تأكيد إرسال هذه الشكوى؟ (نعم/لا)"
@@ -555,13 +556,11 @@ public sealed class ChatOrchestrator(
                     string answer;
                     if (!exec.Success || string.IsNullOrWhiteSpace(exec.ResponseBody))
                     {
-                        answer = userLang == "ar"
-                            ? "عذرًا، لم نتمكن من الحصول على البيانات المطلوبة حاليًا. يرجى المحاولة مرة أخرى لاحقًا."
-                            : "Sorry, we couldn't retrieve the requested data at this time. Please try again later.";
+                        answer = FormatApiFailureMessage(api.ApiName, exec, userLang);
                     }
                     else
                     {
-                        answer = await apiAnswer.AnswerFromApiResultAsync(req.Message, userLang, api.ApiName, exec.ResponseBody, api.ResponseHandlingNotes, ct);
+                        answer = await apiAnswer.AnswerFromApiResultAsync(req.Message, userLang, api.ApiName, exec.ResponseBody, api.ResponseHandlingNotes, conversationHistory, ct);
                     }
 
                     // Save assistant response
@@ -578,7 +577,7 @@ public sealed class ChatOrchestrator(
         }
 
         // GENERAL fallback
-        var generalAnswer = await general.AnswerGeneralAsync(req.Message, userLang, ct);
+        var generalAnswer = await general.AnswerGeneralAsync(req.Message, userLang, conversationHistory, ct);
 
         // Save assistant response
         await audit.AddMessageAsync(new ChatMessage
@@ -875,7 +874,7 @@ public sealed class ChatOrchestrator(
                     plan.RequiresConfirmation = false;
                     plan.UserConfirmed = false;
                     plan.PendingSubmissionSummary = null;
-                    plan.FollowUpQuestion = GenerateComplaintFollowUp(req.Message, userLang);
+                    plan.FollowUpQuestion = GenerateComplaintFollowUp(req.Message, userLang, GetComplaintCategories(apiDefsForPlanner));
                     logger.LogInformation("Complaint keyword safety net (stream): {Prev} → complaint API for: {Message}", prevRoute, req.Message);
                 }
             }
@@ -995,7 +994,7 @@ public sealed class ChatOrchestrator(
                 yield return new StreamEvent("meta", sessionId, "RAG", citations, null);
 
                 var fullResponse = new System.Text.StringBuilder();
-                await foreach (var chunk in rag.StreamAnswerFromChunksAsync(req.Message, userLang, chunks, ct))
+                await foreach (var chunk in rag.StreamAnswerFromChunksAsync(req.Message, userLang, chunks, conversationHistory, ct))
                 {
                     fullResponse.Append(chunk);
                     yield return new StreamEvent("chunk", Content: chunk);
@@ -1074,7 +1073,7 @@ public sealed class ChatOrchestrator(
                                 }
 
                                 // Always regenerate summary from body params to ensure it reflects corrections
-                                var summary = GenerateComplaintSummary(bodyParams, userLang);
+                                var summary = GenerateComplaintSummary(bodyParams, userLang, GetComplaintCategories(apiDefsForPlanner));
 
                                 var confirmPrompt = userLang == "ar"
                                     ? $"{summary}\n\nهل تريد تأكيد إرسال هذه الشكوى؟ (نعم/لا)"
@@ -1147,18 +1146,22 @@ public sealed class ChatOrchestrator(
                     yield return new StreamEvent("meta", sessionId, "API", [], null);
 
                     // Handle API execution failure gracefully
-                    string answer;
                     if (!exec.Success || string.IsNullOrWhiteSpace(exec.ResponseBody))
                     {
-                        answer = userLang == "ar"
-                            ? "عذرًا، لم نتمكن من الحصول على البيانات المطلوبة حاليًا. يرجى المحاولة مرة أخرى لاحقًا."
-                            : "Sorry, we couldn't retrieve the requested data at this time. Please try again later.";
+                        var errorMessage = FormatApiFailureMessage(api.ApiName, exec, userLang);
+                        await audit.AddMessageAsync(new ChatMessage
+                        {
+                            SessionId = sessionId,
+                            Role = "assistant",
+                            Text = errorMessage
+                        }, ct);
+
+                        yield return new StreamEvent("error", Error: errorMessage);
+                        yield break;
                     }
-                    else
-                    {
-                        // API answers are not streamed for now (requires different service method)
-                        answer = await apiAnswer.AnswerFromApiResultAsync(req.Message, userLang, api.ApiName, exec.ResponseBody, api.ResponseHandlingNotes, ct);
-                    }
+
+                    // API answers are not streamed for now (requires different service method)
+                    var answer = await apiAnswer.AnswerFromApiResultAsync(req.Message, userLang, api.ApiName, exec.ResponseBody, api.ResponseHandlingNotes, conversationHistory, ct);
 
                     // Save assistant response
                     await audit.AddMessageAsync(new ChatMessage
@@ -1180,7 +1183,7 @@ public sealed class ChatOrchestrator(
         yield return new StreamEvent("meta", sessionId, "GENERAL", [], null);
 
         var generalFullResponse = new System.Text.StringBuilder();
-        await foreach (var chunk in general.StreamAnswerGeneralAsync(req.Message, userLang, ct))
+        await foreach (var chunk in general.StreamAnswerGeneralAsync(req.Message, userLang, conversationHistory, ct))
         {
             generalFullResponse.Append(chunk);
             yield return new StreamEvent("chunk", Content: chunk);
@@ -1217,6 +1220,22 @@ public sealed class ChatOrchestrator(
             "en" or "english" => "en",
             _ => null
         };
+    }
+
+    private static string FormatApiFailureMessage(string apiName, ApiExecutionResult exec, string lang)
+    {
+        var detail = !string.IsNullOrWhiteSpace(exec.Error)
+            ? exec.Error
+            : exec.StatusCode is int status ? $"HTTP {status}" : "Unknown error";
+
+        var urlInfo = !string.IsNullOrWhiteSpace(exec.Url) ? $" (URL: {exec.Url})" : "";
+
+        if (lang == "ar")
+        {
+            return $"عذرًا، فشل الاتصال بخدمة {apiName}. الخطأ: {detail}{urlInfo}";
+        }
+
+        return $"Sorry, the {apiName} service call failed. Error: {detail}{urlInfo}";
     }
 
     private static string DetectLang(string text)
@@ -1445,7 +1464,8 @@ public sealed class ChatOrchestrator(
         // "مشكلة" + complaint category type
         if (m.Contains("مشكلة"))
         {
-            string[] complaintTypes = ["كهرباء", "مياه", "ماء", "صرف", "إنارة", "انارة", "طرق", "نفايات", "زبالة"];
+            string[] complaintTypes = ["كهرباء", "مياه", "ماء", "صرف", "إنارة", "انارة", "طرق", "نفايات", "زبالة",
+                                       "مرور", "مبانٍ", "بناء", "تعديات", "زراعة", "مركبات"];
             if (complaintTypes.Any(t => m.Contains(t)))
                 return true;
         }
@@ -1482,50 +1502,104 @@ public sealed class ChatOrchestrator(
     }
 
     /// <summary>
+    /// Parses CATEGORY_SUB_ID.description from the complaint API's bodySchemaJson into {id → name} pairs.
+    /// Returns empty dict on any failure — callers fall back to hardcoded labels.
+    /// </summary>
+    private static Dictionary<int, string> ParseComplaintCategories(string bodySchemaJson)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(bodySchemaJson);
+            if (doc.RootElement.TryGetProperty("CATEGORY_SUB_ID", out var catProp) &&
+                catProp.TryGetProperty("description", out var descProp))
+            {
+                var desc = descProp.GetString() ?? "";
+                var result = new Dictionary<int, string>();
+                foreach (Match m in Regex.Matches(desc, @"(\d+)=([^,]+)"))
+                    result[int.Parse(m.Groups[1].Value)] = m.Groups[2].Value.Trim();
+                if (result.Count > 0) return result;
+            }
+        }
+        catch { }
+        return [];
+    }
+
+    /// <summary>
+    /// Finds the first POST API in the planner list and parses its complaint categories.
+    /// </summary>
+    private static Dictionary<int, string> GetComplaintCategories(List<object> apiDefsForPlanner)
+    {
+        try
+        {
+            var complaintApi = apiDefsForPlanner.Cast<dynamic>()
+                .FirstOrDefault(a => ((string)a.method).Equals("POST", StringComparison.OrdinalIgnoreCase));
+            if (complaintApi is not null)
+                return ParseComplaintCategories((string)complaintApi.bodySchema);
+        }
+        catch { }
+        return [];
+    }
+
+    /// <summary>
     /// Generates a follow-up question for complaint initiation when the planner was overridden.
     /// Shows available categories when the user hasn't specified a complaint type.
+    /// Categories are read from the API's bodySchema; falls back to hardcoded list if unavailable.
     /// </summary>
-    private static string GenerateComplaintFollowUp(string message, string lang)
+    private static string GenerateComplaintFollowUp(string message, string lang, Dictionary<int, string>? categories = null)
     {
-        string[] types = ["كهرباء", "مياه", "ماء", "صرف", "إنارة", "انارة", "طرق", "نفايات", "زبالة",
-                          "electricity", "water", "sewage", "road", "lighting", "garbage"];
-        bool hasType = types.Any(t => message.Contains(t, StringComparison.OrdinalIgnoreCase));
+        // Build keyword list for detecting whether the user already named a type
+        var baseKeywords = new[] { "كهرباء", "مياه", "ماء", "صرف", "إنارة", "انارة", "طرق", "نفايات", "زبالة",
+                                   "مرور", "مبانٍ", "بناء", "تعديات", "زراعة", "مركبات",
+                                   "electricity", "water", "sewage", "road", "lighting", "garbage", "traffic", "buildings" };
+        var typeKeywords = categories is { Count: > 0 }
+            ? baseKeywords.Concat(categories.Values).ToArray()
+            : baseKeywords;
+        bool hasType = typeKeywords.Any(t => message.Contains(t, StringComparison.OrdinalIgnoreCase));
+
+        string categoryList;
+        if (categories is { Count: > 0 })
+            categoryList = string.Join("\n", categories.Select(kv => $"{kv.Key}. {kv.Value}"));
+        else if (lang == "ar")
+            categoryList = "1. نفايات\n2. صرف صحي\n3. مياه\n4. إنارة\n5. طرق\n6. كهرباء";
+        else
+            categoryList = "1. Garbage\n2. Sewage\n3. Water\n4. Lighting\n5. Roads\n6. Electricity";
 
         if (lang == "ar")
         {
             return hasType
                 ? "ما هو موقع المشكلة؟ وما هو رقم جوالك للتواصل؟"
-                : "بالتأكيد! يمكنك تقديم شكوى في أحد التصنيفات التالية:\n" +
-                  "1. نفايات\n2. صرف صحي\n3. مياه\n4. إنارة\n5. طرق\n6. كهرباء\n\n" +
-                  "ما هو نوع المشكلة التي تواجهها؟ وأين موقعها؟";
+                : $"بالتأكيد! يمكنك تقديم شكوى في أحد التصنيفات التالية:\n{categoryList}\n\nما هو نوع المشكلة التي تواجهها؟ وأين موقعها؟";
         }
         return hasType
             ? "Where is the problem located? And what's your phone number so we can follow up?"
-            : "Sure! You can file a complaint in one of these categories:\n" +
-              "1. Garbage\n2. Sewage\n3. Water\n4. Lighting\n5. Roads\n6. Electricity\n\n" +
-              "What type of problem are you facing? And where is it located?";
+            : $"Sure! You can file a complaint in one of these categories:\n{categoryList}\n\nWhat type of problem are you facing? And where is it located?";
     }
 
     /// <summary>
     /// Generates a complaint summary from body params when the planner didn't provide one.
+    /// Category name is resolved from the parsed schema categories; falls back to hardcoded labels.
     /// </summary>
-    private static string GenerateComplaintSummary(Dictionary<string, object> bodyParams, string lang)
+    private static string GenerateComplaintSummary(Dictionary<string, object> bodyParams, string lang, Dictionary<int, string>? categories = null)
     {
         var categoryId = bodyParams.TryGetValue("CATEGORY_SUB_ID", out var cat) ? cat?.ToString() : null;
         var location = bodyParams.TryGetValue("LOCATION", out var loc) ? loc?.ToString() : null;
         var phone = bodyParams.TryGetValue("MOBILE_NO", out var mob) ? mob?.ToString() : null;
         var notes = bodyParams.TryGetValue("NOTES", out var n) ? n?.ToString() : null;
 
-        var categoryName = categoryId switch
-        {
-            "1" => lang == "ar" ? "نفايات" : "Garbage",
-            "2" => lang == "ar" ? "صرف صحي" : "Sewage",
-            "3" => lang == "ar" ? "مياه" : "Water",
-            "4" => lang == "ar" ? "إنارة" : "Lighting",
-            "5" => lang == "ar" ? "طرق" : "Roads",
-            "6" => lang == "ar" ? "كهرباء" : "Electricity",
-            _ => categoryId ?? (lang == "ar" ? "غير محدد" : "Unknown")
-        };
+        string categoryName;
+        if (categories is { Count: > 0 } && int.TryParse(categoryId, out var id) && categories.TryGetValue(id, out var fromSchema))
+            categoryName = fromSchema;
+        else
+            categoryName = categoryId switch
+            {
+                "1" => lang == "ar" ? "نفايات" : "Garbage",
+                "2" => lang == "ar" ? "صرف صحي" : "Sewage",
+                "3" => lang == "ar" ? "مياه" : "Water",
+                "4" => lang == "ar" ? "إنارة" : "Lighting",
+                "5" => lang == "ar" ? "طرق" : "Roads",
+                "6" => lang == "ar" ? "كهرباء" : "Electricity",
+                _ => categoryId ?? (lang == "ar" ? "غير محدد" : "Unknown")
+            };
 
         if (lang == "ar")
             return $"📋 تفاصيل الشكوى:\n• نوع المشكلة: {categoryName}\n• الموقع: {location ?? "غير محدد"}\n• رقم الجوال: {phone ?? "غير محدد"}\n• تفاصيل: {notes ?? "غير محدد"}";
@@ -1625,14 +1699,19 @@ public sealed class ChatOrchestrator(
         var m = message.Trim();
 
         // Detect complaint type correction
+        // IDs match CATEGORY_SUB_ID.description in the complaint API's bodySchema
         var typeMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["نفايات"] = "1", ["زبالة"] = "1", ["garbage"] = "1",
-            ["صرف صحي"] = "2", ["صرف"] = "2", ["sewage"] = "2", ["drainage"] = "2",
-            ["مياه"] = "3", ["ماء"] = "3", ["water"] = "3",
-            ["إنارة"] = "4", ["انارة"] = "4", ["lighting"] = "4",
-            ["طرق"] = "5", ["شوارع"] = "5", ["roads"] = "5", ["road"] = "5",
-            ["كهرباء"] = "6", ["كهربا"] = "6", ["electricity"] = "6"
+            ["مبانٍ"] = "1", ["مباني"] = "1", ["بناء"] = "1", ["buildings"] = "1",
+            ["كهرباء"] = "2", ["كهربا"] = "2", ["electricity"] = "2",
+            ["مرور"] = "3", ["سير"] = "3", ["traffic"] = "3",
+            ["نفايات"] = "4", ["زبالة"] = "4", ["garbage"] = "4",
+            ["مياه"] = "5", ["ماء"] = "5", ["water"] = "5",
+            ["طرق"] = "6", ["شوارع"] = "6", ["roads"] = "6", ["road"] = "6",
+            ["خدمات"] = "7", ["customer services"] = "7",
+            ["زراعة"] = "9", ["agriculture"] = "9",
+            ["مركبات"] = "12", ["municipality vehicles"] = "12",
+            ["تعديات"] = "15", ["encroachments"] = "15"
         };
 
         // Check if user is correcting the complaint type

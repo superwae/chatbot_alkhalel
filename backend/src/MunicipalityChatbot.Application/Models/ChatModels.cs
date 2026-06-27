@@ -111,7 +111,8 @@ public sealed record ApiExecutionResult(
     bool Success,
     int? StatusCode,
     string ResponseBody,
-    string? Error
+    string? Error,
+    string? Url = null
 );
 
 // Streaming events for SSE
